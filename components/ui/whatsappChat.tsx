@@ -74,7 +74,12 @@ export default function WhatsAppChat() {
 
             <button
               type="button"
-              onClick={() => setIsOpen(false)}
+              onClick={() => {
+                setIsOpen(false);
+                setHasSent(false);
+                setMessage("");
+                setIsSending(false);
+              }}
               className="rounded-full p-1 text-white transition hover:bg-white/20"
               aria-label="Close"
             >

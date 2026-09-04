@@ -1,16 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Route, Leaf, ChevronRight } from "lucide-react";
-import { useScooterDistance } from "@/hooks/useScooterDistance";
+import { Route, Leaf } from "lucide-react";
 
-// Full precision, comma-grouped — no compact ("2.1M") abbreviation.
 const fullFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
-// Renders a value as individual characters, each remounted (and therefore
-// re-animated) whenever `tick` changes — the split-flap "live" effect.
 function FlipText({ text, distance }: { text: string; distance: number }) {
   return (
     <span className="stat-flip">
@@ -69,25 +65,16 @@ function StatBlock({
   );
 }
 
-export default function ImpactStats({ distanceKm }: { distanceKm?: number }) {
+export default function ImpactStats() {
   const co2PerKm = 40;
 
-  const { distance, active, setActive } = useScooterDistance(distanceKm);
-  const co2SavedKg = (co2PerKm * distance) / 1000;
+  const [distance, setDistance] = useState(0);
+  const [active, setActive] = useState(true);
 
   const placeholderRef = useRef<HTMLDivElement>(null);
   const [pinned, setPinned] = useState(false);
-  // Whether the pinned panel is tucked away to the side (only the tab shows).
   const [collapsed, setCollapsed] = useState(true);
 
-  // Show immediately on first load, don't wait for a scroll-triggered
-  // IntersectionObserver callback.
-  useEffect(() => {
-    setActive(true);
-  }, [setActive]);
-
-  // Reveal once the bar first scrolls into view (kept as a fallback/guard
-  // in case the hero isn't in view on mount for some layouts).
   useEffect(() => {
     const el = placeholderRef.current;
     if (!el) return;
@@ -101,7 +88,6 @@ export default function ImpactStats({ distanceKm }: { distanceKm?: number }) {
     return () => io.disconnect();
   }, [setActive]);
 
-  // Pin to the top of the viewport once its normal spot scrolls above it.
   useEffect(() => {
     const el = placeholderRef.current;
     if (!el) return;
@@ -110,9 +96,6 @@ export default function ImpactStats({ distanceKm }: { distanceKm?: number }) {
         const nowPinned =
           !entry.isIntersecting && entry.boundingClientRect.top < 0;
         setPinned(nowPinned);
-        // Every time it freshly becomes pinned, snap it back to the
-        // collapsed (tucked-to-the-side) state — the user has to
-        // tap the tab to bring it back out.
         if (nowPinned) setCollapsed(true);
       },
       { threshold: 0 },
@@ -120,6 +103,30 @@ export default function ImpactStats({ distanceKm }: { distanceKm?: number }) {
     io.observe(el);
     return () => io.disconnect();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const res = await fetch("/api/impact-stats");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (!cancelled) {
+          setDistance(json.fleet_total_distance_km ?? 0);
+        }
+      } catch {
+        // keep fallback 0
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const co2SavedKg = (co2PerKm * distance) / 1000;
 
   const statConfigs = [
     {
@@ -156,8 +163,6 @@ export default function ImpactStats({ distanceKm }: { distanceKm?: number }) {
 
   return (
     <>
-      {/* Keeps its layout slot even while the pinned copy is showing,
-                so the hero doesn't jump when the bar detaches. */}
       <div
         ref={placeholderRef}
         style={{ visibility: pinned ? "hidden" : "visible" }}
