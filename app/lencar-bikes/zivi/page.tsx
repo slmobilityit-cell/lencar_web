@@ -15,7 +15,7 @@ const THUMBNAILS = [
 
 const COLORS = [
   { name: "Crimson Red", hex: "#a5222c" },
-  { name: "Arctic White", hex: "#f5f5f4" },
+  { name: "Arctic White", hex: "#ffff" },
   { name: "Grey", hex: "#43474b" },
   { name: "Matte Black", hex: "#0b0b0c" },
 ];
@@ -99,7 +99,7 @@ export default function LencarZivi() {
                     onClick={() => setActiveColor(color)}
                     aria-label={color.name}
                     aria-pressed={activeColor.name === color.name}
-                    className={`h-8 w-8 flex-shrink-0 rounded-full border transition-all ${color.hex === "#f5f5f4" ? "border-[#e5e5e5]" : "border-transparent"}`}
+                    className={`h-8 w-8 flex-shrink-0 rounded-full border transition-all ${color.hex === "#ffff" ? "border-[#000]" : "border-transparent"}`}
                     style={{ backgroundColor: color.hex }}
                   />
                 ))}
