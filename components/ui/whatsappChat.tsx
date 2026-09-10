@@ -9,7 +9,7 @@ export default function WhatsAppChat() {
   const [hasSent, setHasSent] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
-  const phoneNumber = "+1 555-842-8067";
+  const phoneNumber = "+15558428067";
 
   const handleSend = () => {
     const trimmedMessage = message.trim();
