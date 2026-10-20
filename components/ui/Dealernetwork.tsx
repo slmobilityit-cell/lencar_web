@@ -104,6 +104,26 @@ const DEALERS: Dealer[] = [
     mapsQuery: "Negombo Road, Kurunegala, Sri Lanka",
     dealer_name: "Sharadi Mortors"
   },
+  {
+    name: "Lencar Grandpass",
+    region: "Western",
+    district: "Colombo",
+    address: "No.609, Sirimawo Bandaranayaka Mawatha, Grandpass, Colombo 14",
+    phone: "+94 71 339 1391",
+    hours: "Mon–Sat, 9:00 AM – 6:00 PM",
+    mapsQuery: "No.609, Sirimawo Bandaranayaka Mawatha, Grandpass, Colombo 14",
+    dealer_name: "Show Room"
+  },
+  {
+    name: "Lencar Maggona",
+    region: "Western",
+    district: "Kaluthara",
+    address: "Galle Road Maggona",
+    phone: "+94 75 541 0810",
+    hours: "Mon–Sat, 9:00 AM – 6:00 PM",
+    mapsQuery: "Galle Road Maggona",
+    dealer_name: "Show Room"
+  }
 ];
 
 const REGIONS = Array.from(new Set(DEALERS.map((d) => d.region)));

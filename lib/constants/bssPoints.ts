@@ -269,4 +269,17 @@ export const bssPoints: BSSPoint[] = [
     mapsQuery:
       "190, Uthurawala, Welipannagahamulla, Kuliyapitiya",
   },
+  {
+    id: "24",
+    name: "Lencar BSS GrandPass",
+    region: "Western",
+    district: "Colombo",
+    address:
+      "No.609, Sirimawo Bandaranayaka Mawatha, Grandpass, Colombo 14",
+    lat: 6.9512606,
+    lng: 79.8741326,
+    hours: "Open 24 hours",
+    mapsQuery:
+      "No.609, Sirimawo Bandaranayaka Mawatha, Grandpass, Colombo 14",
+  },
 ];
