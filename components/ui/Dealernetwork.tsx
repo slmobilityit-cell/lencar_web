@@ -13,6 +13,8 @@ type Dealer = {
   dealer_name: string;
 };
 
+type OutletType = "all" | "dealer" | "showroom";
+
 const DEALERS: Dealer[] = [
   {
     name: "Agalawatta",
@@ -72,7 +74,7 @@ const DEALERS: Dealer[] = [
     phone: "+94 712 567 289",
     hours: "Mon–Sat, 9:00 AM – 6:00 PM",
     mapsQuery: "43A, Janapriya Mawatha, Awariyawatta, Alubomulla, Panadura, Sri Lanka",
-    dealer_name : "Ceylon Motors House"
+    dealer_name: "Ceylon Motors House"
   },
   {
     name: "Kuliyapitiya",
@@ -105,19 +107,19 @@ const DEALERS: Dealer[] = [
     dealer_name: "Sharadi Mortors"
   },
   {
-    name: "Lencar Grandpass",
+    name: "Lencar Grandpass Showroom",
     region: "Western",
     district: "Colombo",
     address: "No.609, Sirimawo Bandaranayaka Mawatha, Grandpass, Colombo 14",
     phone: "+94 71 339 1391",
     hours: "Mon–Sat, 9:00 AM – 6:00 PM",
-    mapsQuery: "No.609, Sirimawo Bandaranayaka Mawatha, Grandpass, Colombo 14",
+    mapsQuery: "609, Sirimawo Bandaranayaka Mawatha, Grandpass, Colombo 14",
     dealer_name: "Show Room"
   },
   {
-    name: "Lencar Maggona",
+    name: "Lencar Maggona Showroom",
     region: "Western",
-    district: "Kaluthara",
+    district: "Kalutara",
     address: "Galle Road Maggona",
     phone: "+94 75 541 0810",
     hours: "Mon–Sat, 9:00 AM – 6:00 PM",
@@ -128,6 +130,10 @@ const DEALERS: Dealer[] = [
 
 const REGIONS = Array.from(new Set(DEALERS.map((d) => d.region)));
 const ALL_DISTRICTS = "All";
+
+// A dealer entry counts as a showroom when its dealer_name is "Show Room".
+const isShowRoom = (d: Dealer) =>
+  d.dealer_name.replace(/\s+/g, "").toLowerCase() === "showroom";
 
 // Each province gets a fixed marker color, used consistently across the
 // filter legend and the card index dot — a small map-legend motif.
@@ -147,6 +153,7 @@ function pad(n: number) {
 export default function DealerNetwork() {
   const [activeRegion, setActiveRegion] = useState(REGIONS[0]);
   const [activeDistrict, setActiveDistrict] = useState(ALL_DISTRICTS);
+  const [activeType, setActiveType] = useState<OutletType>("all");
 
   const availableDistricts = useMemo(() => {
     const pool = DEALERS.filter((d) => d.region === activeRegion);
@@ -159,7 +166,8 @@ export default function DealerNetwork() {
     }
   }, [availableDistricts, activeDistrict]);
 
-  const filteredDealers = useMemo(() => {
+  // Region + district scope, before the type filter is applied.
+  const scopedDealers = useMemo(() => {
     return DEALERS.filter((dealer) => {
       const matchesRegion = dealer.region === activeRegion;
       const matchesDistrict =
@@ -167,6 +175,31 @@ export default function DealerNetwork() {
       return matchesRegion && matchesDistrict;
     });
   }, [activeRegion, activeDistrict]);
+
+  const typeCounts = useMemo(() => {
+    const showrooms = scopedDealers.filter(isShowRoom).length;
+    return {
+      all: scopedDealers.length,
+      dealer: scopedDealers.length - showrooms,
+      showroom: showrooms,
+    };
+  }, [scopedDealers]);
+
+  const filteredDealers = useMemo(() => {
+    if (activeType === "all") return scopedDealers;
+    return scopedDealers.filter((d) =>
+      activeType === "showroom" ? isShowRoom(d) : !isShowRoom(d)
+    );
+  }, [scopedDealers, activeType]);
+
+  const TYPE_OPTIONS: { key: OutletType; label: string }[] = [
+    { key: "all", label: "All" },
+    { key: "dealer", label: "Dealers" },
+    { key: "showroom", label: "Showrooms" },
+  ];
+
+  const typeLabel =
+    activeType === "dealer" ? "Dealers" : activeType === "showroom" ? "Showrooms" : null;
 
   return (
     <div>
@@ -180,6 +213,7 @@ export default function DealerNetwork() {
             {filteredDealers.length === 1 ? "Location" : "Locations"}
             {" · "}{activeRegion}
             {activeDistrict !== ALL_DISTRICTS && <> · {activeDistrict}</>}
+            {typeLabel && <> · {typeLabel}</>}
           </span>
         </div>
         <span className="font-body hidden text-[11px] uppercase tracking-[0.14em] text-[#a3a3a8] sm:block">
@@ -189,6 +223,44 @@ export default function DealerNetwork() {
 
       {/* Filters */}
       <div className="mt-6 flex flex-col gap-4">
+        {/* Outlet type — segmented control: all / dealers / showrooms */}
+          <div className="flex items-center gap-3 font-body text-[12px] uppercase tracking-[0.1em] text-[#6b6b70]">
+            <span id="outlet-type-label">Type</span>
+            <span className="text-[#d8d5cd]">/</span>
+            <div
+              role="group"
+              aria-labelledby="outlet-type-label"
+              className="flex border border-[#0b0b0c]"
+            >
+              {TYPE_OPTIONS.map((opt, idx) => {
+                const isActive = activeType === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    aria-pressed={isActive}
+                    onClick={() => setActiveType(opt.key)}
+                    className={`font-body flex items-center gap-2 px-3.5 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] transition-colors ${
+                      idx > 0 ? "border-l border-[#0b0b0c]" : ""
+                    } ${
+                      isActive
+                        ? "bg-[#0b0b0c] text-white"
+                        : "bg-transparent text-[#4a4a4d] hover:bg-[#f1f0ec] hover:text-[#0b0b0c]"
+                    }`}
+                  >
+                    {opt.label}
+                    <span
+                      className={`tabular-nums text-[11px] ${
+                        isActive ? "text-white/60" : "text-[#a3a3a8]"
+                      }`}
+                    >
+                      {pad(typeCounts[opt.key])}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         {/* Province filter — underline tabs with a legend dot per region */}
         <div className="flex flex-wrap gap-x-6 gap-y-3">
           {REGIONS.map((region) => {
@@ -218,91 +290,101 @@ export default function DealerNetwork() {
           })}
         </div>
 
-        {/* District selector, scoped to the selected province */}
-        <label className="flex items-center gap-3 font-body text-[12px] uppercase tracking-[0.1em] text-[#6b6b70]">
-          District
-          <span className="text-[#d8d5cd]">/</span>
-          <div className="relative">
-            <select
-              value={activeDistrict}
-              onChange={(e) => setActiveDistrict(e.target.value)}
-              className="font-body min-w-[170px] appearance-none border-0 border-b border-[#d8d5cd] bg-transparent py-1 pl-0 pr-7 text-[13px] font-semibold uppercase tracking-[0.06em] text-[#0b0b0c] transition-colors hover:border-[#0b0b0c] focus:border-[#0F4C81] focus:outline-none"
-            >
-              {availableDistricts.map((district) => (
-                <option key={district} value={district}>
-                  {district === ALL_DISTRICTS ? "All districts" : district}
-                </option>
-              ))}
-            </select>
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-[#6b6b70]"
-            >
-              ▾
-            </span>
-          </div>
-        </label>
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+          {/* District selector, scoped to the selected province */}
+          <label className="flex items-center gap-3 font-body text-[12px] uppercase tracking-[0.1em] text-[#6b6b70]">
+            District
+            <span className="text-[#d8d5cd]">/</span>
+            <div className="relative">
+              <select
+                value={activeDistrict}
+                onChange={(e) => setActiveDistrict(e.target.value)}
+                className="font-body min-w-[170px] appearance-none border-0 border-b border-[#d8d5cd] bg-transparent py-1 pl-0 pr-7 text-[13px] font-semibold uppercase tracking-[0.06em] text-[#0b0b0c] transition-colors hover:border-[#0b0b0c] focus:border-[#0F4C81] focus:outline-none"
+              >
+                {availableDistricts.map((district) => (
+                  <option key={district} value={district}>
+                    {district === ALL_DISTRICTS ? "All districts" : district}
+                  </option>
+                ))}
+              </select>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-[#6b6b70]"
+              >
+                ▾
+              </span>
+            </div>
+          </label>
+        </div>
       </div>
 
       {/* Dealer grid */}
       <div className="mt-10 grid grid-cols-1 gap-px overflow-hidden sm:grid-cols-2 lg:grid-cols-3">
-        {filteredDealers.map((dealer, i) => (
-          <div
-            key={dealer.name}
-            className="group relative flex flex-col justify-between bg-white p-6 pt-10 transition-colors hover:bg-[#fafaf9]"
-          >
-            <span
-              aria-hidden="true"
-              className="font-display pointer-events-none absolute left-5 top-2 select-none text-[46px] font-black italic leading-none text-[#0b0b0c]/[0.05] transition-colors group-hover:text-[#0b0b0c]/[0.08]"
+        {filteredDealers.map((dealer, i) => {
+          const showroom = isShowRoom(dealer);
+          return (
+            <div
+              key={dealer.name}
+              className="group relative flex flex-col justify-between bg-white p-6 pt-10 transition-colors hover:bg-[#fafaf9]"
             >
-              {pad(i + 1)}
-            </span>
-
-            <div className="relative">
-              <p className="font-body flex items-center gap-2 text-[14px] font-bold italic uppercase tracking-[0.12em] text-[#0b0b0c]">
-                <span
-                  aria-hidden="true"
-                  className="h-[6px] w-[6px] rounded-full"
-                  style={{ backgroundColor: regionColor(dealer.region) }}
-                />
-                {/* {dealer.region} · {dealer.district} */}
-                {dealer.name}
-              </p>
-              <h3 className="font-display mt-2 text-[15px] font-semibold uppercase tracking-tight text-[#6b6b70]">
-                {dealer.dealer_name}
-              </h3>
-              <p className="font-body mt-3 text-[14px] leading-relaxed text-[#4a4a4d]">
-                {dealer.address}
-              </p>
-              <p className="font-body mt-1 text-[14px] tabular-nums text-[#4a4a4d]">
-                {dealer.phone}
-              </p>
-              <p className="font-body mt-1 text-[13px] text-[#6b6b70]">
-                {dealer.hours}
-              </p>
-            </div>
-
-            <div className="relative mt-6 flex items-center gap-5 border-t border-[#e5e5e5] pt-5">
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                  dealer.mapsQuery
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-body inline-flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.04em] text-[#0b0b0c] transition-colors hover:text-[#0F4C81]"
+              <span
+                aria-hidden="true"
+                className="font-display pointer-events-none absolute left-5 top-2 select-none text-[46px] font-black italic leading-none text-[#0b0b0c]/[0.05] transition-colors group-hover:text-[#0b0b0c]/[0.08]"
               >
-                Get directions
-                <span aria-hidden="true">→</span>
-              </a>
-              <a
-                href={`tel:${dealer.phone.replace(/\s+/g, "")}`}
-                className="font-body text-[13px] font-semibold uppercase tracking-[0.04em] text-[#6b6b70] transition-colors hover:text-[#0b0b0c]"
-              >
-                Call
-              </a>
+                {pad(i + 1)}
+              </span>
+
+              <div className="relative">
+                <p className="font-body flex items-center gap-2 text-[14px] font-bold italic uppercase tracking-[0.12em] text-[#0b0b0c]">
+                  <span
+                    aria-hidden="true"
+                    className="h-[6px] w-[6px] rounded-full"
+                    style={{ backgroundColor: regionColor(dealer.region) }}
+                  />
+                  {dealer.name}
+                </p>
+                <h3 className="font-display mt-2 flex items-center gap-2 text-[15px] font-semibold uppercase tracking-tight text-[#6b6b70]">
+                  {showroom ? (
+                    <span className="bg-[#0b0b0c] px-2 py-0.5 text-[11px] font-bold tracking-[0.12em] text-white">
+                      Showroom
+                    </span>
+                  ) : (
+                    dealer.dealer_name
+                  )}
+                </h3>
+                <p className="font-body mt-3 text-[14px] leading-relaxed text-[#4a4a4d]">
+                  {dealer.address}
+                </p>
+                <p className="font-body mt-1 text-[14px] tabular-nums text-[#4a4a4d]">
+                  {dealer.phone}
+                </p>
+                <p className="font-body mt-1 text-[13px] text-[#6b6b70]">
+                  {dealer.hours}
+                </p>
+              </div>
+
+              <div className="relative mt-6 flex items-center gap-5 border-t border-[#e5e5e5] pt-5">
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    dealer.mapsQuery
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-body inline-flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.04em] text-[#0b0b0c] transition-colors hover:text-[#0F4C81]"
+                >
+                  Get directions
+                  <span aria-hidden="true">→</span>
+                </a>
+                <a
+                  href={`tel:${dealer.phone.replace(/\s+/g, "")}`}
+                  className="font-body text-[13px] font-semibold uppercase tracking-[0.04em] text-[#6b6b70] transition-colors hover:text-[#0b0b0c]"
+                >
+                  Call
+                </a>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {filteredDealers.length === 0 && (
@@ -312,7 +394,10 @@ export default function DealerNetwork() {
           </p>
           <button
             type="button"
-            onClick={() => setActiveDistrict(ALL_DISTRICTS)}
+            onClick={() => {
+              setActiveDistrict(ALL_DISTRICTS);
+              setActiveType("all");
+            }}
             className="font-body mt-3 text-[13px] font-semibold uppercase tracking-[0.06em] text-[#0F4C81] hover:underline"
           >
             Clear filters
