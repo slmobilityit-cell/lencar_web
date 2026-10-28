@@ -213,17 +213,20 @@ export async function POST(request: Request) {
     });
     console.log("[email] Email sent successfully to:", teamRecipients);
 
-    // -- n8n webhook (fire-and-forget, does not block the response) --
+    // -- n8n webhook (awaited so Vercel doesn't kill it before completion) --
     const n8nWebhook = process.env.N8N_WEBHOOK_URL;
     if (n8nWebhook) {
-      console.log("[n8n] Triggering webhook for contact:", { name, email, subject });
-      fetch(n8nWebhook, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, subject, message }),
-      })
-        .then((res) => console.log("[n8n] Webhook response:", res.status))
-        .catch((err) => console.error("[n8n] Webhook failed:", err.message));
+      try {
+        console.log("[n8n] Triggering webhook for contact:", { name, email, subject });
+        const n8nRes = await fetch(n8nWebhook, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, subject, message }),
+        });
+        console.log("[n8n] Webhook response:", n8nRes.status);
+      } catch (n8nErr) {
+        console.error("[n8n] Webhook failed:", n8nErr instanceof Error ? n8nErr.message : n8nErr);
+      }
     }
 
     return NextResponse.json({ ok: true });
@@ -235,4 +238,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
  
